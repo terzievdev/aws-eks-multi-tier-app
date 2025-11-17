@@ -1,0 +1,54 @@
+name: Build and Push to ECR
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REGISTRY: 411203042419.dkr.ecr.us-east-1.amazonaws.com
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
+
+    - name: Create ECR repositories if they don't exist
+      run: |
+        aws ecr describe-repositories --repository-names eks-backend || \
+        aws ecr create-repository --repository-name eks-backend
+        
+        aws ecr describe-repositories --repository-names eks-frontend || \
+        aws ecr create-repository --repository-name eks-frontend
+
+    - name: Build and push Backend image
+      working-directory: ./backend
+      run: |
+        docker build -t ${{ env.ECR_REGISTRY }}/eks-backend:latest .
+        docker push ${{ env.ECR_REGISTRY }}/eks-backend:latest
+
+    - name: Build and push Frontend image
+      working-directory: ./frontend
+      run: |
+        docker build -t ${{ env.ECR_REGISTRY }}/eks-frontend:latest .
+        docker push ${{ env.ECR_REGISTRY }}/eks-frontend:latest
+
+    - name: Image URIs
+      run: |
+        echo "Backend Image: ${{ env.ECR_REGISTRY }}/eks-backend:latest"
+        echo "Frontend Image: ${{ env.ECR_REGISTRY }}/eks-frontend:latest"

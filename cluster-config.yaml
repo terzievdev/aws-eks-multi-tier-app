@@ -1,0 +1,47 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: trainee-eks-cluster
+  region: us-east-1
+  version: "1.28"
+
+# VPC Configuration
+vpc:
+  cidr: 10.0.0.0/16
+  nat:
+    gateway: Single  # Cheapest option - 1 NAT gateway instead of 3
+
+# Node Groups - CHEAP AS POSSIBLE!
+managedNodeGroups:
+  - name: trainee-workers
+    instanceType: t3.small  # Cheapest viable for EKS
+    desiredCapacity: 2
+    minSize: 2
+    maxSize: 3
+    volumeSize: 20
+    ssh:
+      allow: false  # No SSH needed, saves security group complexity
+    labels:
+      role: worker
+    tags:
+      Environment: training
+      Project: eks-multi-tier
+    iam:
+      withAddonPolicies:
+        imageBuilder: true
+        autoScaler: true
+        externalDNS: true
+        certManager: true
+        appMesh: true
+        ebs: true
+        fsx: true
+        efs: true
+        albIngress: true
+        xRay: true
+        cloudWatch: true
+
+# CloudWatch Logging (optional, can disable to save $)
+cloudWatch:
+  clusterLogging:
+    enableTypes: ["api", "audit", "authenticator"]

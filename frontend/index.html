@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EKS Multi-Tier App</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        .status-box {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+        }
+        .label { font-weight: bold; color: #333; }
+        .value { color: #667eea; font-family: monospace; }
+        .counter-box {
+            text-align: center;
+            padding: 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px;
+            color: white;
+            margin: 20px 0;
+        }
+        .counter-value {
+            font-size: 4em;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.1em;
+            border-radius: 10px;
+            cursor: pointer;
+            width: 100%;
+            margin: 10px 0;
+            transition: all 0.3s;
+        }
+        button:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+        .loading { color: #ffc107; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 EKS Multi-Tier App</h1>
+        <p class="subtitle">Kubernetes + Flask + Redis + Nginx</p>
+        
+        <div class="status-box">
+            <h3>Backend Status</h3>
+            <div class="status-item">
+                <span class="label">API Status:</span>
+                <span class="value" id="api-status">Checking...</span>
+            </div>
+            <div class="status-item">
+                <span class="label">Pod Hostname:</span>
+                <span class="value" id="hostname">-</span>
+            </div>
+            <div class="status-item">
+                <span class="label">Redis:</span>
+                <span class="value" id="redis-status">-</span>
+            </div>
+        </div>
+
+        <div class="counter-box">
+            <h3>Visit Counter</h3>
+            <div class="counter-value" id="counter">-</div>
+            <button onclick="incrementCounter()">Increment Counter</button>
+        </div>
+
+        <button onclick="refreshStatus()">🔄 Refresh Status</button>
+    </div>
+
+    <script>
+        const API_URL = '/api';
+
+        async function checkBackend() {
+            try {
+                const response = await fetch(`${API_URL}/`);
+                const data = await response.json();
+                document.getElementById('api-status').innerHTML = '<span class="success">✓ Connected</span>';
+                document.getElementById('hostname').textContent = data.hostname || '-';
+                document.getElementById('redis-status').innerHTML = data.redis_connected 
+                    ? '<span class="success">✓ Connected</span>' 
+                    : '<span class="error">✗ Disconnected</span>';
+                getCounter();
+            } catch (error) {
+                document.getElementById('api-status').innerHTML = '<span class="error">✗ Failed</span>';
+            }
+        }
+
+        async function getCounter() {
+            try {
+                const response = await fetch(`${API_URL}/counter`);
+                const data = await response.json();
+                document.getElementById('counter').textContent = data.counter || 0;
+            } catch (error) {
+                document.getElementById('counter').textContent = 'Error';
+            }
+        }
+
+        async function incrementCounter() {
+            try {
+                const response = await fetch(`${API_URL}/counter`, { method: 'POST' });
+                const data = await response.json();
+                document.getElementById('counter').textContent = data.counter;
+            } catch (error) {
+                alert('Failed to increment counter');
+            }
+        }
+
+        function refreshStatus() {
+            checkBackend();
+        }
+
+        // Initial load
+        checkBackend();
+        
+        // Auto-refresh every 5 seconds
+        setInterval(checkBackend, 5000);
+    </script>
+</body>
+</html>
